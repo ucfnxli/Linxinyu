@@ -1,0 +1,136 @@
+---
+title: "AssessmentPart1"
+author: "Xinyu Lin"
+date: "7 November 2018"
+output: html_document
+---
+```{r}
+getwd()
+setwd("N:/GISwk3")
+install.packages("tidyverse")
+library(tidyverse)
+#wang the data in straight from the web using read_csv, skipping over the 'n/a' entries as you go...
+LondonData <- read_csv("https://files.datapress.com/london/dataset/ward-profiles-and-atlas/2015-09-24T14:21:24/ward-profiles-excel-version.csv", na = "n/a")
+class(LondonData)
+datatypelist <- data.frame(cbind(lapply(LondonData,class)))
+LondonData <- read.csv("https://files.datapress.com/london/dataset/ward-profiles-and-atlas/2015-09-24T14:21:24/ward-profiles-excel-version.csv")
+LondonData <- edit(LondonData)
+summary(df)
+names(LondonData)
+LondonBoroughs<-LondonData[626:658,]
+LondonData <- data.frame(LondonData)
+LondonBoroughs <- LondonData[grep("^E09",LondonData[,3]),]
+head(LondonBoroughs)
+LondonBoroughs <- LondonBoroughs[2:34,]
+LondonBoroughs<-LondonBoroughs[,c(1,19,20,21)]
+#rename the column 1 in LondonBoroughs
+names(LondonBoroughs)[1] <- c("Borough Name")
+plot(LondonBoroughs$Male.life.expectancy..2009.13, LondonBoroughs$X..children.in.reception.year.who.are.obese...2011.12.to.2013.14)
+install.packages("plotly")
+library(plotly)
+plot_ly(LondonBoroughs, x = ~Male.life.expectancy..2009.13, y = ~X..children.in.reception.year.who.are.obese...2011.12.to.2013.14, text = ~LondonBoroughs$`Borough Name`, type = "scatter", mode = "markers")
+install.packages("maptools")
+install.packages("classint")
+install.packages("OpenStreetMap")
+install.packages("tmap")
+install.packages("RColorBrewer")
+install.packages("Sp")
+install.packages("rgeos")
+install.packages("tmaptools")
+install.packages("Sf")
+install.packages("downloader")
+install.packages("rgdal")
+install.packages("geojsonio")
+library(maptools)
+library(RColorBrewer)
+library(classInt)
+library(OpenStreetMap)
+library(sp)
+library(rgeos)
+library(tmap)
+library(tmaptools)
+library(sf)
+library(rgdal)
+library(geojsonio)
+EW <- geojson_read("http://geoportal.statistics.gov.uk/datasets/8edafbe3276d4b56aec60991cbddda50_2.geojson", what = "sp")
+#pull out london using grep and the regex wildcard for'start of the string' (^) to to look for the bit of the district code that relates to London (E09) from the 'lad15cd' column in the data slot of our spatial polygons dataframe
+LondonMap <- EW[grep("^E09",EW@data$lad15cd),]
+#plot it using the base plot function
+qtm(LondonMap)
+#read the shapefile into a simple features object
+BoroughMapSF <- read_shape("BoundaryData/england_lad_2011.shp", as.sf = TRUE)
+BoroughMapSP <- LondonMap
+qtm(BoroughMapSF)
+qtm(BoroughMapSP)
+library(methods)
+#check the class of BoroughMapSF
+class(BoroughMapSF)
+#And check the class of BoroughMapSP
+class(BoroughMapSP)
+#now convert the SP object into an SF object...
+newSF <- st_as_sf(BoroughMapSP)
+#and try the other way around SF to SP...
+newSP <- as(newSF, "Spatial")
+#simples!
+BoroughMapSP <- as(BoroughMapSF, "Spatial")
+#join the data to the @data slot in the SP data frame
+BoroughMapSP@data <- data.frame(BoroughMapSP@data,LondonData[match(BoroughMapSP@data[,"code"],LondonData[,"New.code"]),])
+#check it's joined.
+#head(BoroughMapSP@data)
+BoroughDataMap <- append_data(BoroughMapSF,LondonData, key.shp = "code", key.data = "New.code", ignore.duplicates = TRUE)
+BoroughDataMap2 <- BoroughMapSF %>% left_join(LondonData, by = c("code" = "New.code"))
+library(tmap)
+library(tmaptools)
+tmap_mode("plot")
+qtm(BoroughDataMap, fill = "Rate.of.JobSeekers.Allowance..JSA..Claimants...2015")
+london_osm <- read_osm(BoroughDataMap, type = "esri", zoom = NULL)
+qtm(london_osm) + 
+  tm_shape(BoroughDataMap) + 
+  tm_polygons("Rate.of.JobSeekers.Allowance..JSA..Claimants...2015", 
+              style="jenks",
+              palette="YlOrBr",
+              midpoint=NA,
+              title="Rate per 1,000 people",
+              alpha = 0.5) + 
+  tm_compass(position = c("left", "bottom"),type = "arrow") + 
+  tm_scale_bar(position = c("left", "bottom")) +
+  tm_layout(title = "Job seekers' Allowance Claimants", legend.position = c("right", "bottom"))
+
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+AssessmentPart1:Comparison on Two maps Using Different Software: RStudio and ArcGis
+GIS, as a comprehensive discipline, is a computer system for inputting, storing, querying, analyzing and displaying geographic data. It is increasingly used in various fields of real life, providing solutions, methods and convenience for solving practical problems. This report will evaluate the benefits and drawbacks of RStuido and ArcGis and give a review in terms of data source they used, workflows, good practice and other relevant considerations.
+RStudio is the language environment which connects the code and drawing and it is also a carrier of visualisation which operates statistical analysis and image output. The benefits of RStudio is of free and open source. It is easy to understand and operate. While ArcGis is not free but presents good looking. It does not need code and it only need to input data. Both data they used is the same: "London Data.xls" and "BoundaryData- england_lad_2011.shp."
+In comparison, ArcGis is much easier to understand and operate than RStudio relatively. Because the total steps of workflows of ArcGis are less than RStudio. RStudio runs much slower than ArcGis depend on the device system used. Running RStudio needs more patient for even several hours which is normal.
+Employment rate is the chosen topic to compare these two tools better and to analyse the content and value later.
+
+Figure 1 
+![Caption for the picture.](N:/GISwk3/RProject1/Job seeker's allowance claimants R.jpg)
+
+Figure 2
+![Caption for the picture.](N:/GISwk3/RProject1/Employment rate arcgis.jpg)
+
+
